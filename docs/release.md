@@ -5,7 +5,7 @@ GitHub downloads need a **Developer ID Application** signature and Apple notariz
 ## Prepare the Apple account
 
 1. Create or install a Developer ID Application certificate **with its private key** in this Mac's keychain. In Xcode, use **Xcode > Settings > Accounts > your team > Manage Certificates > + > Developer ID Application**. The Apple Developer account holder can also create one in [Certificates, Identifiers & Profiles](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/).
-2. Confirm it appears in `security find-identity -v -p codesigning` as `Developer ID Application: ... (TEAMID)`.
+2. Confirm it appears in `security find-identity -v -p codesigning` as `Developer ID Application: ... (TEAMID)`. Use **that** Team ID for notarization. A separate `Apple Development` identity on the same Mac may belong to a different team.
 3. Store notarization credentials in the keychain. `notarytool` prompts for the app-specific password; do not put it in this repository or in a shell command:
 
    ```sh
