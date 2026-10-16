@@ -49,7 +49,8 @@ extension GameState {
 
     private mutating func moveGuard(at index: Int, events: inout [GuardEvent]) {
         let timer = guards[index].goldTimer
-        if timer > 0 && timer < 128 {
+        let escapingHole = timer > 0 && timer < 128
+        if escapingHole {
             guards[index].goldTimer -= 1
             let remaining = guards[index].goldTimer
             if remaining >= 13 { return }
@@ -59,7 +60,9 @@ extension GameState {
                 return
             }
         }
-        if guardShouldFall(index) {
+        // During the last six escape counts the 6502 jumps straight to
+        // DETERMINE_GUARD_MOVE, even when the guard is above an open hole.
+        if !escapingHole && guardShouldFall(index) {
             fallGuard(index, events: &events)
             return
         }

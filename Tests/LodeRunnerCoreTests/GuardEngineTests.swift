@@ -93,6 +93,53 @@ struct GuardEngineTests {
         #expect(game.guardPhase == 2)
     }
 
+    @Test func trappedGuardClimbsOutInsteadOfFallingBackIntoHole() throws {
+        var game = try firstLevel()
+        let old = game.guards[0].position
+        game.activeBoard[row: old.row, column: old.column] =
+            game.backgroundBoard[row: old.row, column: old.column]
+        let hole = Position(column: 5, row: 5)
+        game.backgroundBoard[row: hole.row, column: hole.column] = .brick
+        game.activeBoard[row: hole.row, column: hole.column] = .guardSprite
+        game.backgroundBoard[row: hole.row - 1, column: hole.column] = .empty
+        game.activeBoard[row: hole.row - 1, column: hole.column] = .empty
+        game.guards[0].position = hole
+        game.guards[0].yOffset = 1
+        game.guards[0].goldTimer = 7
+        game.guardNumber = game.guards.count
+
+        _ = game.moveGuards()
+        #expect(game.guards[0].position == hole)
+        #expect(game.guards[0].yOffset == 0)
+        #expect(game.guards[0].goldTimer == 6)
+
+        game.guardNumber = game.guards.count
+        _ = game.moveGuards()
+        #expect(game.guards[0].position == Position(column: hole.column, row: hole.row - 1))
+        #expect(game.guards[0].yOffset == 4)
+        #expect(game.guards[0].goldTimer == 5)
+    }
+
+    @Test func freeGuardStillFallsIntoOpenSpace() throws {
+        var game = try firstLevel()
+        let old = game.guards[0].position
+        game.activeBoard[row: old.row, column: old.column] =
+            game.backgroundBoard[row: old.row, column: old.column]
+        let place = Position(column: 5, row: 5)
+        game.backgroundBoard[row: place.row, column: place.column] = .empty
+        game.activeBoard[row: place.row, column: place.column] = .guardSprite
+        game.backgroundBoard[row: place.row + 1, column: place.column] = .empty
+        game.activeBoard[row: place.row + 1, column: place.column] = .empty
+        game.guards[0].position = place
+        game.guards[0].yOffset = 2
+        game.guards[0].goldTimer = 0
+        game.guardNumber = game.guards.count
+
+        _ = game.moveGuards()
+        #expect(game.guards[0].position == place)
+        #expect(game.guards[0].yOffset == 3)
+    }
+
     @Test func resurrectionWaitsForEmptyActiveCell() throws {
         var game = try firstLevel()
         let place = Position(column: 1, row: 1)

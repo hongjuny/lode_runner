@@ -29,7 +29,7 @@ open Build/LodeRunner.app
 
 Both builds package `levels.bin`, `sprites.bin`, `splash.bin`, and the app icon directly in `Build/LodeRunner.app/Contents/Resources`. The app loads its data files from its own bundle, so it can be moved and launched without the source checkout or Swift build directory. To regenerate the icon from [`Assets/LodeRunnerIcon.png`](Assets/LodeRunnerIcon.png), run `sh tools/make-app-icon.sh`.
 
-Press any key on the title screen to start.
+Press any key on the title screen to start. After 10 seconds without input, an automatic demo plays the first level; any key during the demo starts a new game. Game Over returns to the title screen after a short pause.
 
 | Action | Keys |
 | --- | --- |
@@ -81,7 +81,7 @@ python3 tools/export_sprites.py --check
 python3 tools/export_splash.py --check
 ```
 
-The tests cover round-trip encoding of all 150 level sectors, captured level-one execution states, movement and digging, guard patterns, carried gold, holes, death, exits, and the level-150 boundary. Long input traces across several levels have not yet been compared with the original. The original level editor, high-score persistence, and attract mode are not in the macOS app. Gameplay progression has priority over hardware-level pixel and audio matching.
+The tests cover round-trip encoding of all 150 level sectors, captured level-one execution states, movement and digging, guard patterns, carried gold, hole escape, holes, death, exits, and the level-150 boundary. Long input traces across several levels have not yet been compared with the original. The original level editor and high-score persistence are not in the macOS app. Gameplay progression has priority over hardware-level pixel and audio matching.
 
 ## Apple II source and attribution
 

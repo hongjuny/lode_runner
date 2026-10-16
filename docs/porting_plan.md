@@ -62,7 +62,7 @@ The renderer owns HGR addresses, masks, and row pointers. Shared zero-page addre
 | 3. World rules | Port holes, exit ladders, completion, death, lives, and score. | Entrapment, zero-gold, and top-row transitions match original state changes. |
 | 4. Guards | Port patterns, route choice, gold transport, and resurrection. | Guard positions and actions match for identical input sequences. |
 | 5. macOS app | Connect keyboard, display, fixed-step scheduler, and audio. | Play from the first level through Game Over with stable input and integer pixel scaling. |
-| 6. Remaining features | Finish extended progression validation, high scores, attract mode, editor, and user levels if needed. | Original major screens and editing/storage flows can be completed in the app. |
+| 6. Remaining features | Finish extended progression validation, high scores, the original attract-mode high-score rotation, editor, and user levels if needed. | Original major screens and editing/storage flows can be completed in the app. |
 
 Compare state in original game-step order, rather than judging rule accuracy from appearance alone. A useful trace records step number, input, and changed fields. `PLAY_SOUND` also delayed the original loop, so host timing needs separate calibration; monitor refresh rate must not define rule time.
 

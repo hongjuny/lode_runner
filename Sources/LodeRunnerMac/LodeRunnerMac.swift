@@ -110,10 +110,14 @@ private final class GameView: NSView {
     private var transitionTicks = 0
     private var transition: Transition = .none
     private static let deathHoldSteps = 12
+    private static let gameOverDisplaySteps = 72
     private static let irisSteps = 10
+    private static let splashIdleSeconds = 10.0
     private var windowFocused = true
     private var userPaused = false
     private var showingSplash = true
+    private var demoPlaying = false
+    private var splashIdleTime = 0.0
 
     private enum Transition: Equatable { case none, restartLevel, nextLevel, gameOver }
 
@@ -152,9 +156,11 @@ private final class GameView: NSView {
     override func keyDown(with event: NSEvent) {
         if event.modifierFlags.contains(.command) { return }
         if showingSplash {
-            showingSplash = false
-            pressed.removeAll()
-            needsDisplay = true
+            restartGame()
+            return
+        }
+        if demoPlaying {
+            restartGame()
             return
         }
         if event.keyCode == 49 {
@@ -228,7 +234,13 @@ private final class GameView: NSView {
         let now = ProcessInfo.processInfo.systemUptime
         let elapsed = min(max(0, now - (lastTimerTime ?? now)), 0.25)
         lastTimerTime = now
-        guard windowFocused, !userPaused, !showingSplash else {
+        guard windowFocused, !userPaused else {
+            stepAccumulator = 0
+            return
+        }
+        if showingSplash {
+            splashIdleTime += elapsed
+            if splashIdleTime >= Self.splashIdleSeconds { restartGame(demo: true) }
             stepAccumulator = 0
             return
         }
@@ -245,8 +257,12 @@ private final class GameView: NSView {
     private func advanceOneStep() -> Bool {
         if transition != .none {
             if transition == .gameOver {
-                if transitionTicks > 0 { transitionTicks -= 1; return true }
-                return false
+                transitionTicks -= 1
+                if transitionTicks <= 0 {
+                    restartGame(showSplash: true)
+                    return false
+                }
+                return true
             }
             transitionTicks -= 1
             if transition == .restartLevel, transitionTicks == Self.irisSteps {
@@ -273,22 +289,23 @@ private final class GameView: NSView {
         if result.playerEvents.contains(where: {
             if case .goldCollected = $0 { return true }
             return false
-        }) { audio.play(.gold) }
+        }) { playSound(.gold) }
         else if result.playerEvents.contains(where: {
             if case .holeOpened = $0 { return true }
             return false
-        }) { audio.play(.hole) }
+        }) { playSound(.hole) }
         else if result.playerEvents.contains(where: {
             if case .digging(_, let frame) = $0 { return frame % 4 == 0 }
             return false
-        }) { audio.play(.dig) }
+        }) { playSound(.dig) }
         if result.worldEvents.contains(.playerDied) {
-            audio.play(.death)
+            playSound(.death)
             transition = game.lives > 0 ? .restartLevel : .gameOver
             transitionTicks = game.lives > 0
-                ? Self.deathHoldSteps + 2 * Self.irisSteps : Self.deathHoldSteps
+                ? Self.deathHoldSteps + 2 * Self.irisSteps
+                : Self.deathHoldSteps + Self.gameOverDisplaySteps
         } else if game.levelCompleted {
-            audio.play(.levelClear)
+            playSound(.levelClear)
             transition = .nextLevel
             transitionTicks = 12
         }
@@ -307,14 +324,20 @@ private final class GameView: NSView {
         digVisual = nil
     }
 
-    private func restartGame() {
+    private func playSound(_ cue: SoundOutput.Cue) {
+        if !demoPlaying { audio.play(cue) }
+    }
+
+    private func restartGame(showSplash: Bool = false, demo: Bool = false) {
         let level = try! LevelLoader.playState(from: catalog.sector(level: 1))
         game = GameState(level: level)
         pressed.removeAll()
         queuedDig = nil
         digVisual = nil
         userPaused = false
-        showingSplash = false
+        showingSplash = showSplash
+        demoPlaying = demo
+        splashIdleTime = 0
         transition = .none
         transitionTicks = 0
         needsDisplay = true
@@ -433,7 +456,7 @@ private final class GameView: NSView {
         case .none: overlay = nil
         case .restartLevel: overlay = nil
         case .nextLevel: overlay = "LEVEL CLEAR"
-        case .gameOver: overlay = transitionTicks == 0 ? "GAME OVER" : nil
+        case .gameOver: overlay = transitionTicks <= Self.gameOverDisplaySteps ? "GAME OVER" : nil
         } }
         if let overlay {
             let column = max(0, (Board.width - overlay.count) / 2)
