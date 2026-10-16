@@ -33,4 +33,12 @@ The script writes `Build/Release/LodeRunner-VERSION-macOS.zip` and a matching `.
 
 The release script stops if signing, notarization, stapling, or Gatekeeper verification fails. Do not distribute an unsigned build or the un-stapled intermediate archive. For a fresh-install check, extract the final ZIP on another Mac and launch the app there.
 
+If notarization is **Accepted** but stapling fails because a network security service replaces Apple's TLS certificate, keep the staged app and `notary-result.plist` intact. Once `api.apple-cloudkit.com` is reachable with its original Apple certificate, finish without rebuilding or submitting again:
+
+```sh
+sh scripts/build-release-app.sh --finish
+```
+
+This checks the accepted result, staples and validates the staged app, runs Gatekeeper verification, and creates the final ZIP and checksum. For example, a `Certificate authority pinning mismatch` from `stapler` can occur when TLS inspection intercepts Apple CloudKit. Resolve the network path with your network administrator; do not disable certificate validation.
+
 Apple's [notarization guide](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution) and [custom workflow guide](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow) describe these requirements.

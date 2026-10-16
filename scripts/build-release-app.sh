@@ -27,12 +27,43 @@ build_app() {
   printf 'Universal release build: %s\n' "$built_app"
 }
 
+finish_release() {
+  notary_result="$staging_root/notary-result.plist"
+  if [ ! -d "$staged_app" ] || [ ! -f "$staging_root/LodeRunner-notary.zip" ] ||
+     [ ! -f "$notary_result" ]; then
+    printf 'Missing staged app or accepted notarization result; run the full release first.\n' >&2
+    exit 1
+  fi
+  status=$(/usr/libexec/PlistBuddy -c 'Print :status' "$notary_result")
+  if [ "$status" != Accepted ]; then
+    printf 'Notarization status: %s. See %s\n' "$status" "$notary_result" >&2
+    exit 1
+  fi
+
+  codesign --verify --deep --strict --verbose=2 "$staged_app"
+  xcrun stapler staple "$staged_app"
+  xcrun stapler validate "$staged_app"
+  codesign --verify --deep --strict --verbose=2 "$staged_app"
+  spctl --assess --type execute --verbose=4 "$staged_app"
+
+  archive="$release_root/$archive_name"
+  ditto -c -k --keepParent "$staged_app" "$archive"
+  cd "$release_root"
+  shasum -a 256 "$archive_name" > "$archive_name.sha256"
+  printf 'Notarized release archive: %s\n' "$archive"
+  printf 'SHA-256 checksum: %s.sha256\n' "$archive"
+}
+
 if [ "${1:-}" = "--build-only" ]; then
   build_app
   exit 0
 fi
+if [ "${1:-}" = "--finish" ]; then
+  finish_release
+  exit 0
+fi
 if [ "$#" -ne 0 ]; then
-  printf 'Usage: sh scripts/build-release-app.sh [--build-only]\n' >&2
+  printf 'Usage: sh scripts/build-release-app.sh [--build-only|--finish]\n' >&2
   exit 2
 fi
 
@@ -59,20 +90,4 @@ ditto -c -k --keepParent "$staged_app" "$notary_archive"
 notary_result="$staging_root/notary-result.plist"
 xcrun notarytool submit "$notary_archive" --keychain-profile "$profile" \
   --wait --timeout 1h --output-format plist > "$notary_result"
-status=$(/usr/libexec/PlistBuddy -c 'Print :status' "$notary_result")
-if [ "$status" != Accepted ]; then
-  printf 'Notarization status: %s. See %s\n' "$status" "$notary_result" >&2
-  exit 1
-fi
-
-xcrun stapler staple "$staged_app"
-xcrun stapler validate "$staged_app"
-codesign --verify --deep --strict --verbose=2 "$staged_app"
-spctl --assess --type execute --verbose=4 "$staged_app"
-
-archive="$release_root/$archive_name"
-ditto -c -k --keepParent "$staged_app" "$archive"
-cd "$release_root"
-shasum -a 256 "$archive_name" > "$archive_name.sha256"
-printf 'Notarized release archive: %s\n' "$archive"
-printf 'SHA-256 checksum: %s.sha256\n' "$archive"
+finish_release
