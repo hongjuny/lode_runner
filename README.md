@@ -4,6 +4,16 @@ A Swift/AppKit port of the Apple II **Lode Runner** game rules and visual assets
 
 The main goal is **faithful gameplay progression**: movement, digging, falling, gold collection, guard behavior, brick restoration, death, and level changes should occur in the same order for the same input. The port does not emulate the Apple II memory layout or speaker circuitry cycle by cycle.
 
+## Screenshots
+
+**Title screen**
+
+![Lode Runner title screen](screenshots/intro.png)
+
+**Gameplay**
+
+![Lode Runner gameplay on level one](screenshots/gameplay.png)
+
 ## Build and play
 
 Requires macOS 14 or later and the Xcode Swift toolchain. Open [`LodeRunner.xcodeproj`](LodeRunner.xcodeproj), select the **LodeRunner** scheme, and choose Build or Run. Xcode writes the app to `Build/LodeRunner.app`.
