@@ -21,12 +21,7 @@ public struct SpriteAtlas: Sendable {
     }
 
     public static func bundled() throws -> SpriteAtlas {
-        #if SWIFT_PACKAGE
-        let bundle = Bundle.module
-        #else
-        let bundle = Bundle.main
-        #endif
-        let url = bundle.url(forResource: "sprites", withExtension: "bin")!
+        let url = try PortResource.url("sprites", extension: "bin")
         return SpriteAtlas(bytes: Array(try Data(contentsOf: url)))
     }
 

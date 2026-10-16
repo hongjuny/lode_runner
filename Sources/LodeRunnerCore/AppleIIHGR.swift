@@ -28,12 +28,7 @@ public struct AppleIIHGR: Sendable {
     }
 
     public static func bundledSplash() throws -> AppleIIHGR {
-        #if SWIFT_PACKAGE
-        let bundle = Bundle.module
-        #else
-        let bundle = Bundle.main
-        #endif
-        let url = bundle.url(forResource: "splash", withExtension: "bin")!
+        let url = try PortResource.url("splash", extension: "bin")
         return AppleIIHGR(rawPageBytes: Array(try Data(contentsOf: url)))
     }
 

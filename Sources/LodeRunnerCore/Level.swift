@@ -1,5 +1,24 @@
 import Foundation
 
+enum PortResource {
+    static func url(_ name: String, extension fileExtension: String) throws -> URL {
+        #if SWIFT_PACKAGE
+        if let url = Bundle.module.url(forResource: name, withExtension: fileExtension) {
+            return url
+        }
+        #endif
+        if let url = Bundle.main.url(forResource: name, withExtension: fileExtension) {
+            return url
+        }
+        if let resources = Bundle.main.resourceURL,
+           let bundle = Bundle(url: resources.appendingPathComponent("LodeRunnerPort_LodeRunnerCore.bundle")),
+           let url = bundle.url(forResource: name, withExtension: fileExtension) {
+            return url
+        }
+        throw CocoaError(.fileNoSuchFile)
+    }
+}
+
 public enum Tile: UInt8, CaseIterable, Sendable {
     case empty = 0
     case brick = 1
@@ -111,12 +130,7 @@ public struct LevelCatalog: Sendable {
     }
 
     public static func bundled() throws -> LevelCatalog {
-        #if SWIFT_PACKAGE
-        let bundle = Bundle.module
-        #else
-        let bundle = Bundle.main
-        #endif
-        let url = bundle.url(forResource: "levels", withExtension: "bin")!
+        let url = try PortResource.url("levels", extension: "bin")
         return try LevelCatalog(bytes: Array(Data(contentsOf: url)))
     }
 
