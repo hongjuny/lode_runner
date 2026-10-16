@@ -17,6 +17,7 @@
 		100000000000000000000009 = {isa = PBXBuildFile; fileRef = 200000000000000000000009; };
 		10000000000000000000000A = {isa = PBXBuildFile; fileRef = 20000000000000000000000A; };
 		10000000000000000000000B = {isa = PBXBuildFile; fileRef = 20000000000000000000000B; };
+		10000000000000000000000D = {isa = PBXBuildFile; fileRef = 20000000000000000000000D; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,12 +33,14 @@
 		20000000000000000000000A = {isa = PBXFileReference; lastKnownFileType = file; path = sprites.bin; sourceTree = "<group>"; };
 		20000000000000000000000B = {isa = PBXFileReference; lastKnownFileType = file; path = splash.bin; sourceTree = "<group>"; };
 		20000000000000000000000C = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LodeRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		20000000000000000000000D = {isa = PBXFileReference; lastKnownFileType = image.icns; path = LodeRunner.icns; sourceTree = "<group>"; };
+		20000000000000000000000E = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		300000000000000000000001 = {
 			isa = PBXGroup;
-			children = (300000000000000000000002, 300000000000000000000005);
+			children = (300000000000000000000002, 300000000000000000000007, 300000000000000000000005);
 			sourceTree = "<group>";
 		};
 		300000000000000000000002 = {
@@ -54,7 +57,7 @@
 		};
 		300000000000000000000004 = {
 			isa = PBXGroup;
-			children = (200000000000000000000007, 200000000000000000000008);
+			children = (200000000000000000000007, 200000000000000000000008, 20000000000000000000000E);
 			path = LodeRunnerMac;
 			sourceTree = "<group>";
 		};
@@ -68,6 +71,12 @@
 			isa = PBXGroup;
 			children = (200000000000000000000009, 20000000000000000000000A, 20000000000000000000000B);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		300000000000000000000007 = {
+			isa = PBXGroup;
+			children = (20000000000000000000000D);
+			path = Assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -104,7 +113,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		500000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000009, 10000000000000000000000A, 10000000000000000000000B); runOnlyForDeploymentPostprocessing = 0; };
+		500000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000009, 10000000000000000000000A, 10000000000000000000000B, 10000000000000000000000D); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -121,9 +130,8 @@
 				CODE_SIGN_STYLE = Manual;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/Build";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lode Runner";
-				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/LodeRunnerMac/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = org.loderunner.reveng.port;
 				PRODUCT_NAME = LodeRunner;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -137,9 +145,8 @@
 				CODE_SIGN_STYLE = Manual;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/Build";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lode Runner";
-				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/LodeRunnerMac/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = org.loderunner.reveng.port;
 				PRODUCT_NAME = LodeRunner;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

@@ -25,7 +25,7 @@ sh scripts/build-macos-app.sh
 open Build/LodeRunner.app
 ```
 
-Both builds package `levels.bin`, `sprites.bin`, and `splash.bin` directly in `Build/LodeRunner.app/Contents/Resources`. The app loads these files from its own bundle, so it can be moved and launched without the source checkout or Swift build directory.
+Both builds package `levels.bin`, `sprites.bin`, `splash.bin`, and the app icon directly in `Build/LodeRunner.app/Contents/Resources`. The app loads its data files from its own bundle, so it can be moved and launched without the source checkout or Swift build directory. To regenerate the icon from [`Assets/LodeRunnerIcon.png`](Assets/LodeRunnerIcon.png), run `sh tools/make-app-icon.sh`.
 
 Press any key on the title screen to start.
 

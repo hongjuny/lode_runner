@@ -12,7 +12,7 @@ let package = Package(
     targets: [
         .target(name: "LodeRunnerCore", resources: [.process("Resources")]),
         .executableTarget(name: "LevelInspector", dependencies: ["LodeRunnerCore"]),
-        .executableTarget(name: "LodeRunnerMac", dependencies: ["LodeRunnerCore"]),
+        .executableTarget(name: "LodeRunnerMac", dependencies: ["LodeRunnerCore"], exclude: ["Info.plist"]),
         .testTarget(name: "LodeRunnerCoreTests", dependencies: ["LodeRunnerCore"]),
     ]
 )
