@@ -2,19 +2,14 @@ import Foundation
 
 enum PortResource {
     static func url(_ name: String, extension fileExtension: String) throws -> URL {
+        if let url = Bundle.main.url(forResource: name, withExtension: fileExtension) {
+            return url
+        }
         #if SWIFT_PACKAGE
         if let url = Bundle.module.url(forResource: name, withExtension: fileExtension) {
             return url
         }
         #endif
-        if let url = Bundle.main.url(forResource: name, withExtension: fileExtension) {
-            return url
-        }
-        if let resources = Bundle.main.resourceURL,
-           let bundle = Bundle(url: resources.appendingPathComponent("LodeRunnerPort_LodeRunnerCore.bundle")),
-           let url = bundle.url(forResource: name, withExtension: fileExtension) {
-            return url
-        }
         throw CocoaError(.fileNoSuchFile)
     }
 }

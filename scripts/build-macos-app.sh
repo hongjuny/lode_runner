@@ -12,8 +12,10 @@ mkdir -p "$project_root/Build"
 rm -rf "$app_path"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 install -m 755 "$product_root/LodeRunnerMac" "$app_path/Contents/MacOS/LodeRunner"
-ditto "$product_root/LodeRunnerPort_LodeRunnerCore.bundle" \
-      "$app_path/Contents/Resources/LodeRunnerPort_LodeRunnerCore.bundle"
+for resource in levels sprites splash; do
+  install -m 644 "$product_root/LodeRunnerPort_LodeRunnerCore.bundle/Contents/Resources/$resource.bin" \
+    "$app_path/Contents/Resources/$resource.bin"
+done
 cat > "$app_path/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
