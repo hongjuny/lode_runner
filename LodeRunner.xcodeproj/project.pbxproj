@@ -1,0 +1,157 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 = {isa = PBXBuildFile; fileRef = 200000000000000000000001; };
+		100000000000000000000002 = {isa = PBXBuildFile; fileRef = 200000000000000000000002; };
+		100000000000000000000003 = {isa = PBXBuildFile; fileRef = 200000000000000000000003; };
+		100000000000000000000004 = {isa = PBXBuildFile; fileRef = 200000000000000000000004; };
+		100000000000000000000005 = {isa = PBXBuildFile; fileRef = 200000000000000000000005; };
+		100000000000000000000006 = {isa = PBXBuildFile; fileRef = 200000000000000000000006; };
+		100000000000000000000007 = {isa = PBXBuildFile; fileRef = 200000000000000000000007; };
+		100000000000000000000008 = {isa = PBXBuildFile; fileRef = 200000000000000000000008; };
+		100000000000000000000009 = {isa = PBXBuildFile; fileRef = 200000000000000000000009; };
+		10000000000000000000000A = {isa = PBXBuildFile; fileRef = 20000000000000000000000A; };
+		10000000000000000000000B = {isa = PBXBuildFile; fileRef = 20000000000000000000000B; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		200000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIIHGR.swift; sourceTree = "<group>"; };
+		200000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameLoop.swift; sourceTree = "<group>"; };
+		200000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardEngine.swift; sourceTree = "<group>"; };
+		200000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level.swift; sourceTree = "<group>"; };
+		200000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerEngine.swift; sourceTree = "<group>"; };
+		200000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteAtlas.swift; sourceTree = "<group>"; };
+		200000000000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LodeRunnerMac.swift; sourceTree = "<group>"; };
+		200000000000000000000008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundOutput.swift; sourceTree = "<group>"; };
+		200000000000000000000009 = {isa = PBXFileReference; lastKnownFileType = file; path = levels.bin; sourceTree = "<group>"; };
+		20000000000000000000000A = {isa = PBXFileReference; lastKnownFileType = file; path = sprites.bin; sourceTree = "<group>"; };
+		20000000000000000000000B = {isa = PBXFileReference; lastKnownFileType = file; path = splash.bin; sourceTree = "<group>"; };
+		20000000000000000000000C = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LodeRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		300000000000000000000001 = {
+			isa = PBXGroup;
+			children = (300000000000000000000002, 300000000000000000000005);
+			sourceTree = "<group>";
+		};
+		300000000000000000000002 = {
+			isa = PBXGroup;
+			children = (300000000000000000000003, 300000000000000000000004);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		300000000000000000000003 = {
+			isa = PBXGroup;
+			children = (200000000000000000000001, 200000000000000000000002, 200000000000000000000003, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 300000000000000000000006);
+			path = LodeRunnerCore;
+			sourceTree = "<group>";
+		};
+		300000000000000000000004 = {
+			isa = PBXGroup;
+			children = (200000000000000000000007, 200000000000000000000008);
+			path = LodeRunnerMac;
+			sourceTree = "<group>";
+		};
+		300000000000000000000005 = {
+			isa = PBXGroup;
+			children = (20000000000000000000000C);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		300000000000000000000006 = {
+			isa = PBXGroup;
+			children = (200000000000000000000009, 20000000000000000000000A, 20000000000000000000000B);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		400000000000000000000001 = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000000000000000000002;
+			buildPhases = (500000000000000000000001, 500000000000000000000002);
+			buildRules = ();
+			dependencies = ();
+			name = LodeRunner;
+			productName = LodeRunner;
+			productReference = 20000000000000000000000C;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		600000000000000000000001 = {
+			isa = PBXProject;
+			attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 2700; TargetAttributes = {400000000000000000000001 = {CreatedOnToolsVersion = 27.0; }; }; };
+			buildConfigurationList = 700000000000000000000001;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base);
+			mainGroup = 300000000000000000000001;
+			productRefGroup = 300000000000000000000005;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (400000000000000000000001);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		500000000000000000000002 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000009, 10000000000000000000000A, 10000000000000000000000B); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		500000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000001, 100000000000000000000002, 100000000000000000000003, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000007, 100000000000000000000008); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		800000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_VERSION = 6.0; }; name = Debug; };
+		800000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {MACOSX_DEPLOYMENT_TARGET = 14.0; SDKROOT = macosx; SWIFT_VERSION = 6.0; }; name = Release; };
+		800000000000000000000003 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/Build";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Lode Runner";
+				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.loderunner.reveng.port;
+				PRODUCT_NAME = LodeRunner;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		800000000000000000000004 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/Build";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Lode Runner";
+				INFOPLIST_KEY_NSHighResolutionCapable = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.loderunner.reveng.port;
+				PRODUCT_NAME = LodeRunner;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		700000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (800000000000000000000001, 800000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		700000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (800000000000000000000003, 800000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 600000000000000000000001;
+}
