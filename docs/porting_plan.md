@@ -1,86 +1,80 @@
-# 현대 macOS 포팅 계획
+# macOS porting plan
 
-기준 자료는 [`main_logic_io_map.md`](main_logic_io_map.md), `apple2/main.nw`, `apple2/main.bin`, `apple2/golden_source.bin`, `apple2/disk/track_*.asm`이다. 목표는 원작의 레벨·규칙·입력 반응을 먼저 재현하고, macOS 앱의 표시·오디오·저장은 독립된 경계에서 연결하는 것이다.
+The reference material is [`main_logic_io_map.md`](main_logic_io_map.md), `apple2/main.nw`, `apple2/main.bin`, `apple2/golden_source.bin`, and `apple2/disk/track_*.asm`. The goal is to preserve game rules, level data, and input response while placing display, audio, and persistence behind native boundaries.
 
-**진행 상태:** 단계 0의 정적 레벨 기준과 1레벨 실행 상태 6개를 [`reference_baseline.md`](reference_baseline.md)에 기록했다. 단계 1의 Swift 레벨 디코더, 레벨 시작 상태, 검사 도구를 구현했다. 단계 2의 플레이어 이동·굴착·낙하·금 획득은 `PlayerEngine.step`에 옮겼다. 단계 3의 출구 사다리, 구덩이 복구, 레벨 완료·사망·목숨·점수 갱신은 `GameState.advance`에 옮겼다. 단계 4의 경비병 패턴·경로 판단·금 운반·부활을 `GuardEngine`에 옮겼다. 단계 5의 macOS 창, 원본 스프라이트 렌더링, 키 입력, 고정 게임 단계, 임시 효과음을 연결했다. 이어서 원본 HGR 타이틀과 280×192 게임 화면, 글자 스프라이트 상태줄, 인접 픽셀 색상을 재현했다. 150레벨 뒤에는 원본처럼 첫 디스크 레벨부터 다시 진행하며 경비병 패턴 오프셋을 올린다. 다음 검증 우선순위는 다양한 레벨의 장기 경비병 경로, 금 운반·구덩이·사망·재시작, 레벨 경계의 연속 진행이다. HGR 바이트 쓰기·페이지 전환과 원본 스피커 타이밍은 게임 진행 검증 대상에서 제외한다.
+## Progress and evidence
 
-단계 1 검증에서 150개 섹터의 왕복 인코딩과 정적 플레이어·경비병·금 위치를 확인했다. 1레벨은 실행 중 두 보드와 초기 상태도 일치한다. 원본 레벨 8·80·113에는 경비병 타일이 6개씩 있지만, 원본 로더는 역순에서 처음 만난 5명만 등록하고 여섯 번째는 보드에서 지운다. Swift 로더와 테스트도 이 규칙을 따른다. OneDrive 작업 폴더에서는 Swift 테스트 번들의 코드 서명이 실패할 수 있으므로 `swift test --scratch-path /tmp/lode-runner-swift-build`로 검증했다.
+The [execution baseline](reference_baseline.md) contains static data for all 150 levels and six captured level-one runtime states. The Swift level decoder, player engine, outer game loop, guard engine, and AppKit app are implemented. The app uses the original title, sprites, and status glyphs. After level 150 it returns to the first disk level and increases the guard pattern offset, following the original loader's missing-player-sector path.
 
-단계 2의 `step`은 `MOVE_PLAYER` 한 번에 해당한다. 굴착 진행 → 자동 낙하 → 상하/굴착 입력 → 좌우 입력의 순서와 오프셋 경계 통과, 금 +250점을 보존한다. 굴착이 만든 구덩이는 타이머 180으로 등록하고, 바깥 루프의 `HANDLE_TIMERS`가 같은 단계에서 179로 줄인다. 레벨 1의 한 칸 왼쪽 이동, 금 획득, 왼쪽 구덩이 및 낙하를 실행 캡처와 대조했다. 경비병이 함께 움직인 캡처의 전체 보드와 픽셀 겹침으로 인한 사망 판정은 경비병·렌더링 상태를 포함하는 게임 루프에서 다시 대조해야 한다.
+All 150 sectors pass round-trip encoding tests. The first level's initial active and background boards match the captured 6502 state. Levels 8, 80, and 113 contain six guard tiles; the original loader keeps only the first five found in reverse scan order and clears the sixth. The Swift loader and tests preserve that limit. Running Swift tests with `--scratch-path /tmp/lode-runner-swift-build` avoids possible signing failures for test bundles in a OneDrive working directory.
 
-단계 3의 `advance`는 플레이어 단계 → 플레이어/경비병 픽셀 겹침 검사 → 금 0개일 때 출구 사다리 활성화 → 맨 윗줄 완료 검사 → 경비병 부활·구덩이 타이머 → 경비병 이동 순서로 실행한다. 구덩이 생성과 같은 단계에서 타이머는 180에서 179로 감소한다. 복구 시 플레이어 사망 또는 경비병 부활 대기 상태로 전환하며, 완료 시 레벨 +1, 목숨 +1, 점수 +1500을 적용한다. `GameTickResult`의 이벤트는 화면·음향 어댑터가 사용할 경계다. 사망 뒤 같은 레벨 재시작과 다음 레벨 로드는 macOS 앱의 세션 제어에서 연결한다.
+`PlayerEngine.step` corresponds to one `MOVE_PLAYER` call: continue digging, fall automatically, try vertical or dig input, then try horizontal input. It preserves within-cell offset crossings and +250 points for gold. A dug hole starts at 180 and `HANDLE_TIMERS` reduces it to 179 during the same outer step. Captured states have been compared for one left step, gold pickup, left digging, and falling.
 
-단계 4에서는 원본의 3바이트 경비병 이동 패턴과 1부터 세는 경비병 번호를 그대로 순환시킨다. 경비병이 딛는 바닥과 사다리·로프를 기준으로 후보 경로를 평가하고, 이동 오프셋 경계에서 두 보드를 갱신한다. 금 집기 타이머는 고정값이 아니라 그 단계의 `$53`(`GUARD_RESURRECT_COL`)을 `255`에서 뺀 값으로 시작한다. 이 제로페이지 공유 관계를 놓치면 13단계 굴착 캡처의 경비병 금 타이머가 달라진다. 1레벨 첫 이동과 13단계 굴착 캡처에서는 경비병 위치·오프셋·금 타이머·두 보드가 일치한다. `$656F` 낙하 캡처는 새 행을 활성 보드에 쓰기 전의 명령 중간 상태이므로, 완성된 Swift 이동과 해당 한 칸이 다르다. 다른 레벨의 장기 추적 경로는 별도 검증이 필요하다.
+`GameState.advance` executes the player step, bitmap overlap collision, exit ladder reveal when no gold remains, top-row completion, hole and resurrection timers, and guard movement. A filled brick can kill the player or start a guard's resurrection. Completing a level increments level and lives and adds 1,500 points. The macOS session controller handles restart after death and loading the next level.
 
-단계 5의 `LodeRunnerMac`은 AppKit 창에서 `apple2/sprite_data.asm`의 104개 스프라이트를 직접 해제해 그린다. `apple2/main.bin`의 `$0F00` 타이틀 HGR 압축 표도 해제해 시작 화면으로 사용한다. 게임 화면은 280×192 HGR 비트 평면, 인접 비트와 바이트 색상 위상에 따른 파랑·주황·흰색, 16행 아래 원본 글자 스프라이트 상태줄로 표시한다. 입력은 원본 명령으로 변환하고, 창이 키보드 초점을 잃으면 키 상태를 비우고 게임을 일시 정지한다. `SpriteAtlas`는 원본 스프라이트 마스크와 좌표 오프셋을 공유하며, 플레이어가 그려지는 단계에서 경비병 스프라이트와 겹치면 사망 판정을 한다. 금을 주운 단계는 원본 `DIDNT_PICK_UP_GOLD` 예외를 따른다. 이 판정은 경비병 비트맵 겹침에 국한되므로 HGR 페이지 전체 차이를 검사하는 원본과 완전히 같지는 않다. 게임 화면을 매 단계 논리 보드에서 새로 그리므로 원본의 HGR 메모리 바이트 쓰기·더블 버퍼 전환과도 차이가 있다. 색상 RGB 값은 근사치이고, 오디오는 원본 음표/지연 대신 짧은 사각파 신호를 재생한다. 1×는 원본 `FRAME_PERIOD=6`과 소리 지연 루틴에 근거한 초당 24단계 추정치다. Apple II+ 실기 타이밍과 대조하지 않았으며, `⌘1`–`⌘4`로 1–4배속을 선택한다.
+`GuardEngine` cycles the original three-byte movement pattern and one-based guard numbers. It evaluates candidate routes using floor support, ladders, and ropes and updates both boards at cell boundaries. Guard gold pickup starts a variable timer derived from `$53` (`GUARD_RESURRECT_COL`), rather than a constant. The first level's first move and 13-step digging capture agree on guard positions, offsets, gold timers, and boards. The `$656F` falling capture is from the middle of a 6502 move before the new active-board sprite is written, so that one cell differs from a completed Swift step. Long guard paths on other levels still need comparison.
 
-원본 굴착 키는 `U`(왼쪽)와 `O`(오른쪽)다. macOS 앱은 한글 입력기에서도 해당 물리 키 위치를 읽고, 게임 단계 사이의 짧은 키 입력을 다음 단계까지 보관한다. 굴착 중에는 원본 `DIG_BRICK_SPRITES`와 좌우 흙먼지 표에 따라 12단계 스프라이트를 그린다.
+The app renders the 104 sprites from `apple2/sprite_data.asm` and expands the title HGR stream at `$0F00` in `apple2/main.bin`. It draws a 280×192 bitmap with original status glyphs and computes blue, orange, and white from neighboring bits and byte phase. Input uses physical key positions for `U` and `O`, including with non-Latin input methods; short taps are queued until the next game step. Bitmap overlap between player and guards is checked when the player is drawn. Gold pickup follows the original `DIDNT_PICK_UP_GOLD` exception. This is narrower than the original comparison of entire HGR pages.
 
-## 구현 선택
+The display is rebuilt from logical state each step rather than replaying the original HGR writes and page flips. RGB values and sound cues are approximations. At 1× the game runs at an estimated 24 steps per second, informed by `FRAME_PERIOD=6`; it has not been calibrated to real Apple II+ cycles. `⌘1`–`⌘4` selects one to four times that rate. Hardware-perfect HGR writes and speaker timing are outside the current gameplay validation goal.
 
-- **언어와 빌드:** 순수 Swift 게임 코어를 Swift Package로 만든다. 이 환경에는 Swift 6.4와 Xcode 27이 설치돼 있다. 앱은 별도 타깃으로 두어 코어를 명령줄에서 검증할 수 있게 한다.
-- **상태 모델:** 원본 제로페이지 주소를 기능별 상태 구조체와 짧게 살아 있는 작업값으로 번역한다. 원본 주소와 새 필드의 대응표를 유지한다.
-- **진행 단위:** 입력 한 번을 샘플링해 `GameCore.step(input:)`을 실행하고, 결과로 새 상태와 화면·음향·저장 이벤트를 낸다. 원본의 호출 순서를 이 함수 안에 보존한다. 호스트 화면 갱신 주기와 게임 단계 간격은 분리한다.
-- **화면:** 원본 스프라이트와 28×16 보드를 280×192 HGR 화면에 그린다. 타이틀은 원본 압축 HGR 표에서 복원한다. 색상은 인접 비트와 바이트 위상으로 결정하며, HGR 메모리 바이트 쓰기와 페이지 전환은 후속 작업이다. AppKit 창에서는 픽셀을 정수 배율로 확대한다.
-- **입력·오디오:** macOS 키 이벤트를 원본의 두 명령 필드로 변환한다. 음표·스피커 토글은 코어에서 이벤트로 기록하고 앱의 오디오 어댑터가 재생한다.
-- **데이터:** `apple2/disk/track_*.asm`에서 150개 레벨의 256바이트 섹터를 추출한다. 레벨 에디터가 저장할 때는 같은 4비트 형식으로 되돌린다.
+## Architecture choices
+
+| Concern | Porting rule |
+| --- | --- |
+| Language and build | Keep the game core in a Swift package, independently testable from the AppKit app. |
+| State | Translate persistent zero-page values to named state fields and short-lived scratch values to local calculations. Keep a mapping to original addresses. |
+| Game step | Sample input once, advance `GameState`, and report player, world, and guard events. Preserve the original call order; schedule steps independently of host display refresh. |
+| Display | Draw original sprites on a 28×16 board in a 280×192 image. Derive artifact colors from bits; scale output by integer pixels. |
+| Input and audio | Map macOS keys to the meanings of the two original command fields. Handle substitute audio in an adapter outside the core. |
+| Data | Extract 150 256-byte level sectors from `apple2/disk/track_*.asm`. Preserve each sector's trailing 32 bytes when replacing its 4-bit board. |
 
 ```text
-macOS 앱 ── 키/패드 샘플 ──▶ 입력 변환 ──▶ GameCore.step
-   ▲                                         │
-   │                                         ├─ GameState (두 보드, 플레이어, 경비병, 타이머)
-   │                                         ├─ 화면 변경 이벤트 ──▶ 렌더러
-   │                                         ├─ 음향 이벤트 ───────▶ 오디오
-   └────────────── 프레임 표시 ◀─────────────└─ 저장 요청 ───────▶ 레벨/점수 저장소
+macOS app -- sampled keys --> input mapping --> GameState.advance
+    ^                                           |
+    |                                           +-- two boards, player, guards, timers
+    |                                           +-- gameplay events --> renderer / audio
+    +------------------- displayed frame <------+
 ```
 
-## 번역 규칙
+## Translating 6502 conventions
 
-| 6502 표현 | Swift 표현 | 확인할 점 |
+| 6502 representation | Swift representation | Invariant |
 | --- | --- | --- |
-| `$00`–`$05` 플레이어 상태 | `PlayerState`의 칸 좌표, `xOffset/yOffset`, 애니메이션, 방향 | 오프셋 `0...4`에서 `2`가 정렬 위치다. |
-| `$0800`/`$0A00` 보드와 `PTR1/PTR2` | `Board.active`와 `Board.background`, `(row, col)` 접근 | 움직이는 물체가 반영된 값과 지형값을 혼동하지 않는다. |
-| `$0C60` 경비병 배열과 `$12`–`$19` 작업 영역 | `[GuardState]`와 한 경비병의 지역 작업값 | 원본 `LOAD_GUARD_DATA`/`STORE_GUARD_DATA`의 쓰기 시점을 보존한다. |
-| `$85/$86`, `$1B/$1C` 등 그리기 인자 | `RenderCommand(sprite, row, col, page)` | 그리기용 좌표가 플레이어 좌표를 덮지 않는다. |
-| carry 플래그 반환 | `MoveResult` 등 명시적 결과 | 실패 뒤 좌우 이동으로 이어지는 `MOVE_PLAYER` 분기를 보존한다. |
-| `RTS` 주소 테이블 분기 | 명시적 명령/행동 `switch` | 제어키와 경비병 행동 표의 분기 순서를 보존한다. |
-| 명령어 피연산자 변경 | 상태 필드 또는 테이블 인덱스 | 자기 수정 코드의 숨은 상태를 빠뜨리지 않는다. |
-| 8비트 연산, BCD 점수 | 범위가 정해진 정수와 명시적 변환 | 오버플로, 부호 비트, `$FF` 특수값을 원본과 비교한다. |
+| `$00`–`$05` player state | `PlayerState` cell, `xOffset/yOffset`, animation, facing | Offsets are 0...4, with 2 aligned. |
+| `$0800`/`$0A00` boards and `PTR1/PTR2` | `activeBoard`, `backgroundBoard`, indexed by row and column | Do not confuse moving occupants with terrain. |
+| `$0C60` guard array and `$12`–`$19` scratch | `[GuardState]` and local values for one guard | Preserve the read and write points of `LOAD_GUARD_DATA` / `STORE_GUARD_DATA`. |
+| `$85/$86`, `$1B/$1C` drawing arguments | Local sprite, row, column, and page values | Drawing coordinates must not overwrite persistent player coordinates. |
+| Carry-flag returns | Explicit success or failure results | Preserve the `MOVE_PLAYER` fallback from a failed primary command to horizontal movement. |
+| `RTS` address-table dispatch | Explicit action selection | Preserve input and guard-action branch order. |
+| Self-modified operands | Named state fields or table indices | Do not lose implicit state stored in instructions. |
+| Eight-bit arithmetic and BCD score | Bounded integers and explicit score conversion | Check overflow, sign bits, and special `$FF` values against the original. |
 
-`GameState`에는 레벨 번호, 목숨, 점수, 플레이어, 경비병, 두 보드, 금/사다리 수, 파낸 벽돌과 부활 타이머, 경비병 단계, 게임 모드, 현재 명령을 둔다. 렌더링 주소·마스크·행 포인터는 게임 상태가 아닌 렌더러의 작업값으로 둔다. `$55/$56/$5C`처럼 다른 문맥에서 재사용되는 주소는 용도별 별도 필드로 번역한다.
+The renderer owns HGR addresses, masks, and row pointers. Shared zero-page addresses such as `$55`, `$56`, and `$5C` become separate values for their separate uses.
 
-## 구현 단계와 완료 기준
+## Verification stages
 
-| 단계 | 작업 | 완료 기준 |
+| Stage | Work | Completion criterion |
 | --- | --- | --- |
-| 0. 기준선 | 원본 바이너리와 레벨 섹터를 고정하고, 원본 실행의 입력·상태 관찰 시나리오를 준비한다. 6502 상태를 볼 수 있는 실행 환경에서 레벨 시작, 이동, 금 획득, 굴착, 사망, 경비병 추적을 기록한다. | 동일 입력을 반복했을 때 비교 가능한 상태 기록이 있다. 최소 기록 항목은 레벨, 플레이어 칸/오프셋, 두 보드의 변경, 금 수, 경비병 위치, 타이머다. |
-| 1. 데이터·보드 | 섹터 파서, 4비트 레벨 디코더, 스프라이트 번호, 활성/배경 보드, 레벨 시작 상태를 구현한다. | 150개 레벨을 읽고 다시 인코딩한 앞 224바이트가 입력과 일치한다. 유효한 레벨의 플레이어·경비병·금 위치를 원본 상태와 비교한다. |
-| 2. 플레이어 | `MOVE_PLAYER` 순서대로 굴착 지속, 낙하, 키 명령, 상하좌우 이동, 금 획득을 옮긴다. | 정지·이동·낙하·사다리·로프·굴착 시나리오에서 칸/오프셋, 보드, 금 수가 기준 기록과 일치한다. |
-| 3. 월드 규칙 | 구덩이 타이머, 벽돌 복구, 출구 사다리, 레벨 완료·사망·목숨·점수를 옮긴다. | 벽돌에 갇힌 플레이어/경비병, 금 0개, 맨 윗줄 도달의 상태 전이가 일치한다. |
-| 4. 경비병 | 경비병 배열, 3단계 이동 패턴, 경로 판단, 금 운반·투하·부활을 옮긴다. | 같은 초기 상태와 입력열에서 경비병별 좌표와 행동 순서가 기준 기록과 일치한다. |
-| 5. macOS 앱 | 키보드 입력, 화면 렌더링, 게임 단계 스케줄러, 음향을 연결한다. | 첫 레벨부터 게임 오버까지 플레이할 수 있고, 창 크기 변경에도 픽셀 비율과 입력 상태가 유지된다. |
-| 6. 나머지 기능 | 150개 레벨 진행, 점수 저장, 타이틀/시연 모드, 레벨 에디터와 사용자 레벨 저장을 완성한다. | 원본의 주요 화면과 편집·저장 흐름을 앱에서 끝까지 수행할 수 있다. |
+| 0. Baseline | Freeze original binaries and level sectors; capture input and state scenarios from a 6502 execution environment. | Repeatable records of level, player cell and offsets, board changes, gold, guards, and timers. |
+| 1. Data and boards | Decode sectors, sprites, both boards, and level-start state. | All 150 packed boards round-trip; representative initial states match the original. |
+| 2. Player | Port `MOVE_PLAYER` digging, falling, input priority, movement, and gold collection. | Cell, offsets, board, and gold count match captured movement scenarios. |
+| 3. World rules | Port holes, exit ladders, completion, death, lives, and score. | Entrapment, zero-gold, and top-row transitions match original state changes. |
+| 4. Guards | Port patterns, route choice, gold transport, and resurrection. | Guard positions and actions match for identical input sequences. |
+| 5. macOS app | Connect keyboard, display, fixed-step scheduler, and audio. | Play from the first level through Game Over with stable input and integer pixel scaling. |
+| 6. Remaining features | Finish extended progression validation, high scores, attract mode, editor, and user levels if needed. | Original major screens and editing/storage flows can be completed in the app. |
 
-각 단계에서 **상태 비교는 원본 게임 단계 순서대로** 수행한다. 화면의 외형만으로 규칙이 맞는지 판단하지 않는다. 비교용 기록은 단계 번호와 입력, 바뀐 상태 필드만 저장해 차이를 좁힌다. 원본의 `PLAY_SOUND`가 지연도 맡으므로, 실제 초당 단계 수는 기준선에서 측정한 뒤 스케줄러에 반영한다. 현대 디스플레이의 프레임률을 게임 규칙의 시간 단위로 사용하지 않는다.
+Compare state in original game-step order, rather than judging rule accuracy from appearance alone. A useful trace records step number, input, and changed fields. `PLAY_SOUND` also delayed the original loop, so host timing needs separate calibration; monitor refresh rate must not define rule time.
 
-## 첫 구현 묶음
+## Current priorities
 
-1. `Sources/LodeRunnerCore`에 `LevelSector`, `Tile`, `Board`, `PlayerState`, `GuardState`, `GameState`를 정의한다.
-2. 레벨 256바이트의 앞 224바이트를 낮은 니블, 높은 니블 순으로 28×16 보드에 전개한다. 나머지 32바이트는 보존한다.
-3. 섹터 추출 도구를 만들고, 레벨 데이터의 출처와 순서를 기록한다.
-4. 보드와 상태를 사람이 읽을 수 있는 텍스트로 출력하는 명령줄 도구를 만든다. 원본과 비교할 상태 기록의 첫 형식으로 사용한다.
+1. Compare long guard movement sequences on more levels, including carried gold and hole interactions.
+2. Capture complete death, restart, and level-boundary traces from the original and compare session state.
+3. Keep HGR byte-level rendering and speaker-cycle replication outside gameplay validation unless a concrete rule difference requires them.
 
-이 묶음은 화면·사운드 없이 실행 가능하며, 이후 플레이어 로직의 입력과 기대 상태를 고정한다.
+## macOS API references
 
-## 현재 열어 둔 결정
-
-- 화면의 첫 목표는 원본 타일/동작을 확인하는 표현으로 둔다. Apple II 색상과 HGR 페이지 전환의 픽셀 단위 일치는 별도 렌더러 완료 기준으로 둔다.
-- 6502 사이클 단위의 음악·속도 일치 여부는 기준선 기록 후 결정한다. 게임 규칙의 단계 순서와 결과는 먼저 일치시킨다.
-- 사용자 레벨 저장 형식은 원본 256바이트 섹터를 기본으로 하되, macOS 파일 저장과 점수 저장의 UI는 앱 단계에서 정한다.
-
-## macOS API 근거
-
-- Apple `CGImage`: <https://developer.apple.com/documentation/coregraphics/cgimage>
-- Apple SwiftUI 이미지 보간: <https://developer.apple.com/documentation/swiftui/fitting-images-into-available-space>
-- Apple `NSEvent`: <https://developer.apple.com/documentation/appkit/nsevent>
-- Apple `AVAudioEngine`: <https://developer.apple.com/documentation/avfaudio/avaudioengine>
+- [Apple CGImage](https://developer.apple.com/documentation/coregraphics/cgimage)
+- [Apple SwiftUI image interpolation](https://developer.apple.com/documentation/swiftui/fitting-images-into-available-space)
+- [Apple NSEvent](https://developer.apple.com/documentation/appkit/nsevent)
+- [Apple AVAudioEngine](https://developer.apple.com/documentation/avfaudio/avaudioengine)

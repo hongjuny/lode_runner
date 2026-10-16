@@ -1,55 +1,58 @@
-# 원본 실행 기준선
+# Original execution baseline
 
-이 기준선은 두 종류의 자료로 구성된다.
+The baseline has two kinds of evidence:
 
-1. `fixtures/reference_levels.json`: 저장된 `apple2/main.bin`/`apple2/golden_source.bin`과 150개 레벨 섹터에서 추출한 **정적 데이터**. `python3 tools/capture_reference.py --check`로 검증한다.
-2. `fixtures/runtime/*.json`: 재구성한 디스크 이미지를 Apple II 실행기에서 돌려 얻은 **실행 중 메모리 상태**. 6502 코드의 상태 전이를 비교할 때 사용한다.
+1. `fixtures/reference_levels.json` contains **static data** derived from `apple2/main.bin`, `apple2/golden_source.bin`, and all 150 level sectors. Verify it with `python3 tools/capture_reference.py --check`.
+2. `fixtures/runtime/*.json` contains **runtime memory states** captured while running the reconstructed disk image in an Apple II emulator. These snapshots support comparisons of 6502 state transitions.
 
-`tools/extract_runtime_snapshot.py`는 실행기의 128 KiB RAM 덤프에서 게임 규칙에 필요한 주소를 추출한다. 화면의 HGR 픽셀, CPU 레지스터, 전체 디스크 I/O 기록은 스냅샷에 포함하지 않았다. `capture_pc`는 덤프 직전 실행기가 멈춘 PC이며, 보드/경비병 데이터는 그 순간의 메모리 값이다.
+`tools/extract_runtime_snapshot.py` reads the addresses needed for gameplay rules from a 128 KiB emulator RAM dump. Snapshots do not contain HGR pixels, CPU registers, or a complete disk I/O trace. `capture_pc` is the program counter at the pause point; board and guard values are the contents at that instant.
 
-## 원본과 실행 환경
+## Source and execution environment
 
-- 소스: 저장된 `apple2/main.bin` SHA-256 `5c9cc551242e08b76cb3a37e89f8bfb6dc02d886b628aab07798833b8708bbb1`
-- `apple2/golden_source.bin` SHA-256 `a2e62f89abc8ae6aa763574fbf4db2b38cf7eb3f5b4fc0b68cbf339a12f9bd90`; `apple2/main.bin`의 디스크 로드 구간과 33,024바이트 모두 일치
-- 재구성 디스크 이미지 SHA-256 `22b3b578e254c781fd456fbbf7c22124e970997f328cd83b89ca29a1219c871e`
-- 실행기: [Bobbin](https://github.com/benj-edwards/bobbin-ai), commit `b5ca8d3a957132640c94dd00ad6c3d058a49125a`, Apple II+ (`--machine plus`), simple 인터페이스
-- 실행기의 해당 commit에는 `src/Makefile.am`의 `bobbin_SOURCES`에서 `control_socket.c`가 누락돼 있어, **임시 빌드 디렉터리에서만** 이를 추가해 빌드했다. 리포의 소스나 바이너리는 수정하지 않았다.
+- Committed `apple2/main.bin` SHA-256: `5c9cc551242e08b76cb3a37e89f8bfb6dc02d886b628aab07798833b8708bbb1`
+- `apple2/golden_source.bin` SHA-256: `a2e62f89abc8ae6aa763574fbf4db2b38cf7eb3f5b4fc0b68cbf339a12f9bd90`. The 33,024-byte disk-loaded portion of `main.bin` matches it.
+- Reconstructed disk image SHA-256: `22b3b578e254c781fd456fbbf7c22124e970997f328cd83b89ca29a1219c871e`
+- Emulator: [Bobbin](https://github.com/benj-edwards/bobbin-ai), commit `b5ca8d3a957132640c94dd00ad6c3d058a49125a`, Apple II+ (`--machine plus`), simple interface.
+- That Bobbin commit omits `control_socket.c` from `bobbin_SOURCES` in `src/Makefile.am`. It was added only in a temporary build directory; no source or binary in this repository was changed for that workaround.
 
-디스크 이미지는 어셈블러 없이 저장된 바이너리에서 만들었다.
+The disk image was built from the committed binaries without an assembler, from inside `apple2/`:
 
 ```sh
+cd apple2
 python3 -c 'import build, pathlib; build.DSKFILE=pathlib.Path("/tmp/lode_runner_reference.do"); build.build_disk()'
 ```
 
-실행기 명령:
+Emulator command, from the Bobbin build directory:
 
 ```sh
 ./bobbin --simple --machine plus --disk /tmp/lode_runner_reference.do \
   --breakpoint 60E4 --max-runtime 300
 ```
 
-`$60E4`는 `MOVE_PLAYER` 호출 직전의 게임 루프 시작점이다. 디버거에서 `save-ram /tmp/name.ram`으로 메모리를 저장하면 실행이 계속되므로, 다음 저장을 하기 전에 다시 브레이크포인트에 멈췄는지 확인한다. JSON은 다음처럼 만든다.
+`$60E4` is the start of the game loop immediately before `MOVE_PLAYER`. In the debugger, `save-ram /tmp/name.ram` resumes execution after saving, so stop at the breakpoint again before taking another snapshot. Convert a dump to JSON with:
 
 ```sh
 python3 tools/extract_runtime_snapshot.py /tmp/name.ram \
   fixtures/runtime/name.json --label name --pc 60E4
 ```
 
-## 캡처 결과
+Run that conversion command from the port repository root.
 
-| 파일 | 관찰한 상태 | 캡처 위치 |
+## Captured states
+
+| File | Observed state | Capture point |
 | --- | --- | --- |
-| `level1_start.json` | 1레벨 시작: 플레이어 `(열 14, 행 14, 오프셋 2/2)`, 금 6개, 경비병 3명, 목숨 5개 | `$60E4` |
-| `level1_left_once.json` | 키보드 모드에서 `J` 한 번: 플레이어 열은 14, 가로 오프셋은 `2→1` | `$60E4` |
-| `level1_gold_pickup.json` | 이어서 오른쪽 `L` 연속 입력: 금 `6→5`, BCD 점수 `00000000→50020000`(+250), 플레이어 열 17 | `$60E4` |
-| `level1_hole_open.json` | 시작 상태에서 왼쪽 굴착 `U`: 활성 보드 `(13,15)`의 벽돌 `1→0`, 배경 보드는 `1`, 복구 타이머 179 | `$60E4` |
-| `level1_fall_into_hole.json` | 구덩이 생성 후 `J` 연속 입력: 플레이어 `(13,15)`, 세로 오프셋 0, 생존 | `$656F`, 플레이어 행 변경 직후 |
-| `level1_death.json` | 같은 구덩이 경로에서 `ALIVE`가 `1→0`; 플레이어 `(13,15)`, 복구 타이머 1 | `$6E02`, 사망 판정 직후 |
+| `level1_start.json` | Level 1 starts with player at column 14, row 14, offsets 2/2; 6 gold, 3 guards, 5 lives | `$60E4` |
+| `level1_left_once.json` | One keyboard `J`: player remains in column 14; horizontal offset changes 2 → 1 | `$60E4` |
+| `level1_gold_pickup.json` | Repeated `L`: gold count 6 → 5, BCD score `00000000` → `50020000` (+250), player reaches column 17 | `$60E4` |
+| `level1_hole_open.json` | `U` from the starting state: active-board brick at column 13, row 15 changes 1 → 0; background stays 1; fill timer is 179 | `$60E4` |
+| `level1_fall_into_hole.json` | Repeated `J` after digging: player at column 13, row 15, vertical offset 0, still alive | `$656F`, immediately after changing the player row |
+| `level1_death.json` | Along the same hole route, `ALIVE` changes 1 → 0; player at column 13, row 15; fill timer is 1 | `$6E02`, immediately after death detection |
 
-`level1_left_once`, `level1_hole_open`, `level1_fall_into_hole` 시나리오는 디버거에서 `$95` (`INPUT_MODE`)를 `$CB`로 설정해 키보드 모드로 실행했다. 이는 원본의 제어키로도 선택할 수 있는 모드다. 이 조작을 별도로 기록하는 이유는 기본 시작 스냅샷의 입력 모드가 `$CA`(조이스틱)이기 때문이다. 금 수집 시나리오에는 `L`을 20개 큐에 넣고 `$93` (`GOLD_COUNT`)의 변경을 감시했다. 굴착 시나리오에서는 `$09B1` (활성 보드의 행 15, 열 13), 낙하에서는 `$01` (`PLAYER_ROW`), 사망에서는 `$9A` (`ALIVE`)를 감시했다.
+For `level1_left_once`, `level1_hole_open`, and `level1_fall_into_hole`, the debugger set `$95` (`INPUT_MODE`) to `$CB` for keyboard input. The original controls can also select this mode. This intervention is recorded because the initial snapshot uses `$CA` (joystick mode). The gold scenario queued 20 `L` inputs and watched `$93` (`GOLD_COUNT`). Digging watched `$09B1` (active board, row 15, column 13); falling watched `$01` (`PLAYER_ROW`); death watched `$9A` (`ALIVE`).
 
-마지막 사망 스냅샷은 `ALIVE`가 바뀐 순간의 관찰이다. 정확한 사망 원인과 이후 목숨 차감/재시작까지 이 스냅샷 하나로 단정하지 않는다. 포팅 코드의 사망 처리를 검증할 때는 그 이후의 루프 경계도 별도로 캡처해야 한다.
+The final death snapshot captures the instant `ALIVE` changes. It does not establish the exact cause of death or the later life decrement and restart. Those behaviors require snapshots at subsequent loop boundaries.
 
-## 사용 방식
+## Comparing the port
 
-포팅 코드의 레벨 시작과 각 입력 시나리오에서 `GameState`를 같은 형식으로 내보내고, `player`, `guards`, `holes`, `gold_remaining`, `score_bcd_bytes`, `active_board`, `background_board`를 비교한다. `ram_sha256`은 원본 덤프 출처 확인용이며 네이티브 코드의 출력과 비교하지 않는다. `guard_phase`와 경비병의 세부 상태를 비교할 때는 스냅샷마다 입력 횟수와 캡처 위치가 같아야 한다.
+Export `GameState` at level start and after each matching input sequence, then compare `player`, `guards`, `holes`, `gold_remaining`, `score_bcd_bytes`, `active_board`, and `background_board`. `ram_sha256` identifies the original dump and is not a value to compare with native output. Match the number of inputs and the capture point before comparing `guard_phase` or detailed guard state.
