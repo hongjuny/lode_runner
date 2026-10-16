@@ -18,6 +18,8 @@ The main goal is **faithful gameplay progression**: movement, digging, falling, 
 
 Requires macOS 14 or later and the Xcode Swift toolchain. Open [`LodeRunner.xcodeproj`](LodeRunner.xcodeproj), select the **LodeRunner** scheme, and choose Build or Run. Xcode writes the app to `Build/LodeRunner.app`.
 
+For a Developer ID-signed and notarized GitHub release, follow the [release guide](docs/release.md). Local builds are not distribution signed.
+
 The command line build uses the same output location:
 
 ```sh
